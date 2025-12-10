@@ -1,0 +1,102 @@
+# نظام الكشف السلوكي | Système de Détection Comportementale
+# Docker Compose Configuration
+
+version: "3.9"
+
+services:
+  # ==================== خدمة الكشف الرئيسية ====================
+  # ==================== Service de Détection Principal ====================
+  detector:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: behavioral_detector
+    restart: unless-stopped
+    volumes:
+      - ../data:/app/data
+      - ../logs:/app/logs
+      - ../config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=INFO
+    command: ["python", "-m", "src.detector.realtime_detector", "--duration", "3600"]
+    networks:
+      - detection_network
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: "0.5"
+
+  # ==================== خدمة واجهة Streamlit ====================
+  # ==================== Service Interface Streamlit ====================
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: behavioral_dashboard
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    volumes:
+      - ../data:/app/data:ro
+      - ../config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["streamlit", "run", "src/interface/streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    networks:
+      - detection_network
+    depends_on:
+      - detector
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: "0.5"
+
+  # ==================== خدمة توليد البيانات ====================
+  # ==================== Service Génération de Données ====================
+  generator:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: behavioral_generator
+    volumes:
+      - ../data:/app/data
+      - ../config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["python", "-m", "src.generator.dataset_generator", "--benign", "1000", "--malicious", "800", "--duration", "10"]
+    networks:
+      - detection_network
+    profiles:
+      - generator  # تشغيل بـ: docker-compose --profile generator up generator
+
+  # ==================== خدمة تدريب النماذج ====================
+  # ==================== Service Entraînement des Modèles ====================
+  trainer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: behavioral_trainer
+    volumes:
+      - ../data:/app/data
+      - ../config:/app/config:ro
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: ["python", "-m", "src.models.train_models", "--data", "/app/data/processed/combined_dataset.csv"]
+    networks:
+      - detection_network
+    profiles:
+      - trainer  # تشغيل بـ: docker-compose --profile trainer up trainer
+
+networks:
+  detection_network:
+    driver: bridge
+    name: behavioral_detection_net
+
+volumes:
+  data_volume:
+    name: behavioral_data
+  logs_volume:
+    name: behavioral_logs

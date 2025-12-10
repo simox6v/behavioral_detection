@@ -1,0 +1,151 @@
+# نظام الكشف السلوكي | Détection Comportementale
+# Configuration File | ملف التكوين
+
+# إعدادات المراقبة | Paramètres de surveillance
+monitoring:
+  # فترة الجمع بالثواني | Intervalle de collecte en secondes
+  collection_interval: 0.5
+  
+  # حجم نافذة الميزات بالثواني | Taille de la fenêtre en secondes
+  feature_window: 10
+  
+  # الحد الأقصى للأحداث في الذاكرة | Max événements en mémoire
+  max_events_buffer: 10000
+
+# مراقبة العمليات | Surveillance des processus
+process_monitor:
+  enabled: true
+  # قائمة العمليات المستثناة | Processus exclus
+  excluded_processes:
+    - System
+    - System Idle Process
+    - Registry
+
+# مراقبة الشبكة | Surveillance réseau
+network_monitor:
+  enabled: true
+  # المنافذ المستثناة | Ports exclus
+  excluded_ports: []
+
+# مراقبة الملفات | Surveillance fichiers
+file_monitor:
+  enabled: true
+  # المجلدات المراقبة | Répertoires surveillés
+  watch_directories:
+    - ./data/test_sandbox
+  # الامتدادات المراقبة | Extensions surveillées
+  watch_extensions:
+    - .txt
+    - .doc
+    - .docx
+    - .pdf
+    - .xls
+    - .xlsx
+    - .json
+    - .csv
+    - .py
+    - .js
+  # المجلدات المستثناة | Répertoires exclus
+  excluded_directories:
+    - __pycache__
+    - .git
+    - node_modules
+    - .venv
+
+# توليد البيانات | Génération de données
+dataset:
+  # عدد الأحداث الحميدة | Nombre d'événements bénins
+  benign_events: 10000
+  # عدد الأحداث المشبوهة | Nombre d'événements malveillants
+  malicious_events: 8000
+  # مسار الإخراج | Chemin de sortie
+  output_dir: ./data/raw
+  # تنسيق الإخراج | Format de sortie
+  output_format: jsonl  # jsonl or csv
+
+# هندسة الميزات | Feature Engineering
+features:
+  # حجم النافذة المتحركة | Taille de la fenêtre glissante
+  window_size: 10  # seconds
+  # الميزات المفعلة | Features activées
+  enabled_features:
+    - file_ops_per_sec
+    - io_read_rate
+    - io_write_rate
+    - net_connections_rate
+    - cpu_mean
+    - cpu_std
+    - memory_mean
+    - path_entropy
+    - burstiness
+    - unique_files_ratio
+    - delete_create_ratio
+    - unique_ports_ratio
+    - connection_burst
+    - file_extension_entropy
+    - temporal_regularity
+    - io_asymmetry
+
+# نماذج التعلم الآلي | Modèles ML
+models:
+  # المسار لحفظ النماذج | Chemin de sauvegarde
+  save_dir: ./data/models
+  
+  # Isolation Forest
+  isolation_forest:
+    n_estimators: 100
+    contamination: 0.1
+    random_state: 42
+  
+  # One-Class SVM
+  one_class_svm:
+    kernel: rbf
+    nu: 0.1
+    gamma: auto
+  
+  # Local Outlier Factor
+  lof:
+    n_neighbors: 20
+    contamination: 0.1
+  
+  # Random Forest
+  random_forest:
+    n_estimators: 100
+    max_depth: 10
+    random_state: 42
+  
+  # XGBoost
+  xgboost:
+    n_estimators: 100
+    max_depth: 6
+    learning_rate: 0.1
+    random_state: 42
+
+# الكشف الفوري | Détection en temps réel
+detector:
+  # زمن الاستجابة الأقصى | Latence maximale
+  max_latency: 2.0  # seconds
+  # الحد الأقصى للذاكرة | RAM maximale
+  max_memory_mb: 80
+  # عتبة التنبيه | Seuil d'alerte
+  alert_threshold: 0.7
+  # النموذج الافتراضي | Modèle par défaut
+  default_model: isolation_forest
+
+# واجهة المستخدم | Interface utilisateur
+interface:
+  # منفذ Streamlit | Port Streamlit
+  streamlit_port: 8501
+  # تحديث اللوحة | Rafraîchissement dashboard
+  refresh_interval: 1  # seconds
+  # ألوان التنبيهات | Couleurs des alertes
+  colors:
+    normal: "#00FF00"      # أخضر | Vert
+    warning: "#FFA500"     # برتقالي | Orange
+    danger: "#FF0000"      # أحمر | Rouge
+
+# التسجيل | Logging
+logging:
+  level: INFO
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  file: ./logs/behavioral_detection.log
